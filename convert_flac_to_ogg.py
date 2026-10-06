@@ -29,7 +29,7 @@ MIN_OUTPUT_BYTES = 10 * 1024  # 10 KB
 
 # Minecraft mod 资源命名映射：FLAC 文件名(不含扩展名) -> OGG 文件名列表(不含扩展名)
 # 规范：全小写，仅 a-z0-9_-，以英文为主
-# 语言后缀使用 Minecraft 标准 xx_yy 格式（en_us / zh_cn / ja_jp / ko_kr 等）
+# 语言后缀：zh=中文 / en=英语 / jp=日语 / hk=韩语
 # 纯音乐不加语言后缀
 NAME_MAP: dict[str, list[str]] = {
     # 纯音乐（无语言后缀）
@@ -38,19 +38,19 @@ NAME_MAP: dict[str, list[str]] = {
     "未行之路_The_Road_Not_Taken": ["the_road_not_taken"],
 
     # 经过 / Passing Memories
-    "经过": ["passing_memories_zh_cn"],
-    "Passing_Memories": ["passing_memories_en_us"],
-    "記憶の旅_Passing_Memories__记忆之旅": ["passing_memories_ja_jp"],
+    "经过": ["passing_memories_zh"],
+    "Passing_Memories": ["passing_memories_en"],
+    "記憶の旅_Passing_Memories__记忆之旅": ["passing_memories_jp"],
 
     # 回家的路 / The Long Way Home
-    "回家的路": ["the_long_way_home_zh_cn"],
-    "The_Long_Way_Home": ["the_long_way_home_en_us"],
+    "回家的路": ["the_long_way_home_zh"],
+    "The_Long_Way_Home": ["the_long_way_home_en"],
 
     # 风的来信 / A Letter From the Wind
-    "风的来信": ["a_letter_from_the_wind_zh_cn"],
-    "A_Letter_From_the_Wind": ["a_letter_from_the_wind_en_us"],
-    "風の思い出_A_Letter_From_the_Wind_jp": ["a_letter_from_the_wind_ja_jp"],
-    "바람의 편지_A_Letter_From_the_Wind_hk": ["a_letter_from_the_wind_ko_kr"],
+    "风的来信": ["a_letter_from_the_wind_zh"],
+    "A_Letter_From_the_Wind": ["a_letter_from_the_wind_en"],
+    "風の思い出_A_Letter_From_the_Wind_jp": ["a_letter_from_the_wind_jp"],
+    "바람의 편지_A_Letter_From_the_Wind_hk": ["a_letter_from_the_wind_hk"],
 }
 
 
