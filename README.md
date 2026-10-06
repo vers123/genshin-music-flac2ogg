@@ -33,20 +33,32 @@ Audio files in a Minecraft mod resource pack must follow these rules:
 
 - All lowercase, containing only `a-z`, `0-9`, `_`, `-`
 - English names as the base
-- A single source file whose name contains both Chinese and English generates two OGG files (`_en_us` + `_zh_cn` suffixes)
-- Pure English / pure Chinese source files generate a single OGG with the corresponding language suffix
+- Language suffixes use Minecraft standard `xx_yy` format (`en_us`, `zh_cn`, `ja_jp`, `ko_kr`, etc.)
 - Instrumental tracks have no language suffix
 
-The name mapping is configured via `NAME_MAP` in the script:
+The name mapping is configured explicitly via `NAME_MAP` in the script. The script matches the source FLAC filename against the keys and uses the corresponding values as the output OGG filenames:
 
 ```python
 NAME_MAP = {
-    "A_Letter_From_the_Wind": ["a_letter_from_the_wind_en_us"],
-    "Dream_Aria_梦之咏叹": ["dream_aria_en_us", "dream_aria_zh_cn"],
-    "Genshin_Impact_Main_Theme": ["genshin_impact_main_theme"],
-    "风的来信": ["a_letter_from_the_wind_zh_cn"],
-    "The_Long_Way_Home": ["the_long_way_home_en_us"],
+    # Instrumental (no language suffix)
+    "Genshin_Impact_Main_Theme": ["main_theme"],
+    "Dream_Aria_梦之咏叹": ["dream_aria"],
+    "未行之路_The_Road_Not_Taken": ["the_road_not_taken"],
+
+    # Passing Memories
+    "经过": ["passing_memories_zh_cn"],
+    "Passing_Memories": ["passing_memories_en_us"],
+    "記憶の旅_Passing_Memories__记忆之旅": ["passing_memories_ja_jp"],
+
+    # The Long Way Home
     "回家的路": ["the_long_way_home_zh_cn"],
+    "The_Long_Way_Home": ["the_long_way_home_en_us"],
+
+    # A Letter From the Wind
+    "风的来信": ["a_letter_from_the_wind_zh_cn"],
+    "A_Letter_From_the_Wind": ["a_letter_from_the_wind_en_us"],
+    "風の思い出_A_Letter_From_the_Wind_jp": ["a_letter_from_the_wind_ja_jp"],
+    "바람의 편지_A_Letter_From_the_Wind_hk": ["a_letter_from_the_wind_ko_kr"],
 }
 ```
 
