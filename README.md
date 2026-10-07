@@ -1,6 +1,7 @@
 # genshin-music-flac2ogg
 
-Version: 1.0.0
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/vers123/genshin-music-flac2ogg/releases/tag/v1.0.0)
 
 A batch conversion tool that converts Genshin Impact main theme FLAC files into Minecraft OGG Vorbis files compliant with Fabric / NeoForge mod resource pack naming conventions.
 
@@ -155,5 +156,7 @@ want to track your collection progress in version control.
 | Metadata | -map_metadata 0 | source tags preserved |
 
 ## License
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 This project is licensed under the MIT License. See LICENSE for details.
