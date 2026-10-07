@@ -1,7 +1,7 @@
 # genshin-music-flac2ogg
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-1.0.1-blue.svg)](https://github.com/vers123/genshin-music-flac2ogg/releases/tag/v1.0.1)
+[![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)](https://github.com/vers123/genshin-music-flac2ogg/releases/tag/v1.1.0)
 
 A batch conversion tool that converts Genshin Impact main theme FLAC files into Minecraft OGG Vorbis files compliant with Fabric / NeoForge mod resource pack naming conventions.
 
@@ -21,9 +21,11 @@ Also includes a small toolkit for maintaining the in-game music item catalog and
 ### Catalog and checklist tools
 
 - Merge-based CSV updates: append new items without overwriting manual edits
-- Markdown checklist: clickable task list generated from the CSV
-- Checkbox preservation: existing checked state survives regeneration, matched by item name
-- Stable sorting: special series first, numbered items sorted numerically
+- Data validation: checks for empty fields, duplicate numbers, missing numbers in region ranges, and unclassified items
+- Markdown checklist: clickable task list grouped by in-game region, generated from the CSV
+- Checkbox preservation: existing checked state survives regeneration, matched by normalized item name (works across renames and languages)
+- Multi-language output: generate checklists in 15 languages via `--lang`; translations live in `langs/*.json` with fallback to Simplified Chinese
+- One-click build: `tools/build.py` runs parse → validate → generate all language checklists
 
 ## Requirements
 
@@ -47,6 +49,10 @@ Merge new items into the existing CSV (existing rows are kept):
 
        python tools/parse_yumemusic.py tools/raw_new.txt -o data/yumemusic.csv
 
+Run data validation (empty fields / duplicate numbers / missing numbers / unclassified items):
+
+       python tools/parse_yumemusic.py tools/raw_new.txt -o data/yumemusic.csv --validate
+
 Preview what would be added, without writing:
 
        python tools/parse_yumemusic.py tools/raw_new.txt -o data/yumemusic.csv --dry-run
@@ -56,14 +62,39 @@ Overwrite instead of merge:
        python tools/parse_yumemusic.py tools/raw_new.txt -o data/yumemusic.csv --overwrite
 
 The input can be tab-separated or comma-separated. Duplicate header rows and blank rows are skipped.
+Names containing commas inside parentheses are repaired automatically.
 
 ### Generate the checklist
 
        python tools/csv_to_checklist.py
 
-Output is written to data/yumemusic.md. To reset all checkboxes:
+Output is written to `data/yumemusic.md`. To reset all checkboxes:
 
        python tools/csv_to_checklist.py --reset
+
+Generate a checklist in another language (e.g. English, Japanese):
+
+       python tools/csv_to_checklist.py --lang en
+       python tools/csv_to_checklist.py --lang ja
+
+Output is written to `data/yumemusic_{lang}.md`. Checkbox state is always read from the
+Chinese `data/yumemusic.md`, so progress stays consistent across all languages.
+
+### One-click build
+
+Parse, validate, and regenerate the CSV plus checklists for all languages that have
+a translation file in `langs/`:
+
+       python tools/build.py
+
+Build only specific languages:
+
+       python tools/build.py --langs zh-CN,en,ja
+
+Skip validation or reset all checkboxes:
+
+       python tools/build.py --no-validate
+       python tools/build.py --reset
 
 ## Naming Convention
 
@@ -86,7 +117,9 @@ Unmapped files fall back to lowercased names with a warning.
 
 - data/name_map.csv: FLAC source stem to OGG output stem mapping, read by the conversion script.
 - data/yumemusic.csv: metadata archive of the in-game item catalog, maintained manually or via the parser.
-- data/yumemusic.md: generated Markdown checklist, not used by the conversion script.
+- data/yumemusic.md: generated Markdown checklist (Chinese), not used by the conversion script.
+- data/yumemusic_{lang}.md: generated Markdown checklists for other languages.
+- langs/{code}.json: translation files for 15 languages (zh-CN, zh-TW, en, ja, ko, es, fr, ru, th, vi, de, id, pt, tr, it). Each file has `names`, `regions`, and `ui` keys. Missing translations fall back to Simplified Chinese, then the original text. Regenerate templates with `python tools/_gen_lang_templates.py` when items are added or removed.
 
 ### Catalog CSV format
 
@@ -111,20 +144,26 @@ The name column is the unique key used for merging and checkbox matching.
 
 ## Checklist
 
-data/yumemusic.md is a Markdown task list. Items are grouped into two sections:
+`data/yumemusic.md` is a Markdown task list. Items are grouped by in-game region,
+with a table of contents at the top for quick navigation.
 
-- Special: tracks whose name does not match the pattern "旋曜玉帛·其N". These include
-  album tracks like "《风的来信》·其一" and sub-series like "奇域旋律·xxx".
-  Series order is controlled by SERIES_ORDER in tools/csv_to_checklist.py.
-- Numbered: tracks matching "旋曜玉帛·其N", sorted by the numeric value of N.
+- Region grouping is determined by number ranges and keywords configured in
+  `tools/regions.py` (`NUMBER_REGIONS`, `KEYWORD_REGIONS`).
+- Special series (album tracks, sub-series) are ordered via `SPECIAL_ORDER`.
+- Numbered tracks ("旋曜玉帛·其N") are sorted by the numeric value of N.
 
 Checked state is preserved across regeneration. The script reads the existing
-data/yumemusic.md, collects all names marked with [x], and reapplies the mark
-to matching rows in the new output. Items that disappear from the CSV are dropped
-along with their state.
+Chinese `data/yumemusic.md`, collects all names marked with `[x]` (normalized by
+removing parenthesized aliases and `《》`), and reapplies the mark to matching rows.
+Items that disappear from the CSV are dropped along with their state.
 
-data/yumemusic.md is listed in .gitignore by default. Remove that line if you
-want to track your collection progress in version control.
+For other languages (`data/yumemusic_{lang}.md`), checkbox state is always read
+from the Chinese `data/yumemusic.md`, so your progress stays consistent across
+all language versions.
+
+`data/yumemusic.md` and `data/yumemusic_*.md` are listed in `.gitignore` by
+default. Remove those lines if you want to track your collection progress in
+version control.
 
 ## Directory Structure
 
@@ -132,10 +171,17 @@ want to track your collection progress in version control.
     |-- data/
     |   |-- name_map.csv
     |   |-- yumemusic.csv
-    |   `-- yumemusic.md
+    |   |-- yumemusic.md            # generated (zh-CN)
+    |   `-- yumemusic_*.md          # generated (other languages)
+    |-- langs/
+    |   `-- {code}.json             # 15 translation files
     |-- tools/
-    |   |-- parse_yumemusic.py
-    |   `-- csv_to_checklist.py
+    |   |-- regions.py              # shared constants (regions, ranges, languages)
+    |   |-- i18n.py                 # translation system with fallback
+    |   |-- parse_yumemusic.py      # raw text -> CSV (with --validate)
+    |   |-- csv_to_checklist.py     # CSV -> Markdown checklist (--lang)
+    |   |-- build.py                # one-click build pipeline
+    |   `-- _gen_lang_templates.py  # regenerate langs/*.json templates
     |-- flac/
     |-- ogg/
     |-- irc/
