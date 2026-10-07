@@ -1,37 +1,29 @@
-"""FLAC -> OGG(Vorbis) 批量转换脚本（Minecraft 适用）
-
-仅依赖 Python 标准库，通过 subprocess 调用系统 ffmpeg。
-转换参数：libvorbis / -q:a 5 / 48000Hz / stereo / 仅音频流 / 保留元数据
-"""
-
 import subprocess
 import sys
 from pathlib import Path
+import csv
 
 # 目录配置
 BASE_DIR = Path(__file__).resolve().parent
+DATA_DIR = BASE_DIR / "data"
+NAME_MAP_FILE = DATA_DIR / "name_map.csv"
 INPUT_DIR = BASE_DIR / "flac"
 OUTPUT_DIR = BASE_DIR / "ogg"
 
-# 转换参数（针对 Minecraft 优化）
+# 转换参数
 FFMPEG_ARGS = [
-    "-map", "0:a",           # 只取音频流，丢弃封面图等视频流
+    "-map", "0:a",           # 只取音频流, 丢弃封面图等视频流
     "-map_metadata", "0",    # 保留源文件元数据
     "-c:a", "libvorbis",     # OGG Vorbis 编码器
     "-q:a", "5",             # 质量档位 ~160kbps
     "-ar", "48000",          # 采样率保持 48kHz
     "-ac", "2",              # 立体声
-    "-y",                    # 覆盖已存在文件，避免交互阻塞
+    "-y",                    # 覆盖已存在文件, 避免交互阻塞
 ]
 
-# 输出文件最小字节阈值（低于此值视为转换失败）
 MIN_OUTPUT_BYTES = 10 * 1024  # 10 KB
 
-# Minecraft mod 资源命名映射：FLAC 文件名(不含扩展名) -> OGG 文件名列表(不含扩展名)
-# 规范：全小写，仅 a-z0-9_-，以英文为主
-# 语言后缀：zh=中文 / en=英语 / jp=日语 / hk=韩语
-# 纯音乐不加语言后缀
-NAME_MAP: dict[str, list[str]] = {
+DEFAULT_NAME_MAP: dict[str, list[str]] = {
     # 纯音乐（无语言后缀）
     "Genshin_Impact_Main_Theme": ["main_theme"],
     "Dream_Aria_梦之咏叹": ["dream_aria"],
@@ -50,22 +42,45 @@ NAME_MAP: dict[str, list[str]] = {
     "风的来信": ["a_letter_from_the_wind_zh"],
     "A_Letter_From_the_Wind": ["a_letter_from_the_wind_en"],
     "風の思い出_A_Letter_From_the_Wind_jp": ["a_letter_from_the_wind_jp"],
-    "바람의 편지_A_Letter_From_the_Wind_hk": ["a_letter_from_the_wind_hk"],
+    "바람의 편지_A_Letter_From_the_Wind_hk": ["a_letter_from_the_wind_ko"],
 }
 
+def load_name_map() -> dict[str, list[str]]:
+    """优先读取 data/name_map.csv；不存在或为空时回退到内置映射。"""
+    if not NAME_MAP_FILE.exists():
+        print(f"[信息] 未找到 {NAME_MAP_FILE}, 使用内置 NAME_MAP")
+        return DEFAULT_NAME_MAP
+
+    mapping: dict[str, list[str]] = {}
+    with NAME_MAP_FILE.open("r", encoding="utf-8-sig", newline="") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            src = (row.get("source_stem") or "").strip()
+            out = (row.get("output_stem") or "").strip()
+            if not src or not out:
+                continue
+            mapping.setdefault(src, []).append(out)
+
+    if not mapping:
+        print(f"[警告] {NAME_MAP_FILE} 没有有效映射, 使用内置 NAME_MAP")
+        return DEFAULT_NAME_MAP
+
+    return mapping
+
+NAME_MAP = load_name_map()
 
 def get_output_names(src_stem: str) -> list[str]:
-    """根据映射表获取合规的输出文件名列表，未映射的默认转小写并警告。"""
+    """根据映射表获取合规的输出文件名列表, 未映射的默认转小写并警告。"""
     if src_stem in NAME_MAP:
         return NAME_MAP[src_stem]
-    # 兜底：转小写，非 a-z0-9_- 的字符替换为下划线
+    # 兜底：转小写, 非 a-z0-9_- 的字符替换为下划线
     fallback = "".join(c if c.isascii() and (c.isalnum() or c in "-_") else "_" for c in src_stem.lower())
-    print(f"[警告] 文件名 '{src_stem}' 未在 NAME_MAP 中，使用兜底命名 '{fallback}'")
+    print(f"[警告] 文件名 '{src_stem}' 未在 NAME_MAP 中, 使用兜底命名 '{fallback}'")
     return [fallback]
 
 
 def convert_one(src: Path, dst: Path) -> bool:
-    """转换单个 FLAC 文件到 OGG，成功返回 True。"""
+    """转换单个 FLAC 文件到 OGG, 成功返回 True。"""
     cmd = ["ffmpeg", "-i", str(src)] + FFMPEG_ARGS + [str(dst)]
     print(f"[转换] {src.name} -> {dst.name}")
     print(f"[命令] {' '.join(cmd)}")
@@ -80,7 +95,7 @@ def convert_one(src: Path, dst: Path) -> bool:
             errors="replace",
         )
     except FileNotFoundError:
-        print("[错误] 未找到 ffmpeg，请确认已安装并加入 PATH")
+        print("[错误] 未找到 ffmpeg, 请确认已安装并加入 PATH")
         return False
 
     # 检查返回码
@@ -92,7 +107,7 @@ def convert_one(src: Path, dst: Path) -> bool:
 
     # 检查 stderr 中是否有 Error 关键字（即使返回码为 0 也要检查）
     if "Error" in result.stderr or "error" in result.stderr:
-        print("[警告] stderr 中包含 Error 关键字，请检查：")
+        print("[警告] stderr 中包含 Error 关键字, 请检查：")
         print(result.stderr[-1500:])
 
     # 检查输出文件
@@ -132,7 +147,6 @@ def main() -> int:
         output_names = get_output_names(src.stem)
         for out_name in output_names:
             dst = OUTPUT_DIR / (out_name + ".ogg")
-            # 跳过已存在且大小正常的输出文件（增量转换）
             if dst.exists() and dst.stat().st_size >= MIN_OUTPUT_BYTES:
                 print(f"[跳过] {dst.name} 已存在（{dst.stat().st_size / 1024:.1f} KB）")
                 skipped += 1
@@ -144,7 +158,7 @@ def main() -> int:
                 failed += 1
             print("-" * 60)
 
-    print(f"全部完成：成功 {success} 个，跳过 {skipped} 个，失败 {failed} 个")
+    print(f"全部完成：成功 {success} 个, 跳过 {skipped} 个, 失败 {failed} 个")
     return 0 if failed == 0 else 2
 
 

@@ -5,7 +5,7 @@ A batch conversion tool that converts Genshin Impact main theme FLAC files into 
 ## Features
 
 - **Minecraft naming compliance**: auto-generates lowercase filenames using only `a-z0-9_-`
-- **Language suffixes**: appends `_en_us` / `_zh_cn` suffixes based on the source language
+- **Language suffixes**: appends `_zh` / `_en` / `_jp` / `_ko` suffixes based on the source language
 - **Incremental conversion**: skips existing valid OGG files; only converts newly added FLAC files
 - **Quality assurance**: 48 kHz stereo / libvorbis -q:a 5 / audio stream only (cover art removed) / metadata preserved
 - **Error validation**: checks ffmpeg return code, stderr Error keywords, and output file size threshold
@@ -33,45 +33,36 @@ Audio files in a Minecraft mod resource pack must follow these rules:
 
 - All lowercase, containing only `a-z`, `0-9`, `_`, `-`
 - English names as the base
-- Language suffixes: `zh` (Chinese), `en` (English), `jp` (Japanese), `hk` (Korean)
+- Language suffixes: `zh` (Chinese), `en` (English), `jp` (Japanese), `ko` (Korean)
 - Instrumental tracks have no language suffix
 
-The name mapping is configured explicitly via `NAME_MAP` in the script. The script matches the source FLAC filename against the keys and uses the corresponding values as the output OGG filenames:
+The mapping is configured in `data/name_map.csv`:
 
-```python
-NAME_MAP = {
-    # Instrumental (no language suffix)
-    "Genshin_Impact_Main_Theme": ["main_theme"],
-    "Dream_Aria_梦之咏叹": ["dream_aria"],
-    "未行之路_The_Road_Not_Taken": ["the_road_not_taken"],
-
-    # Passing Memories
-    "经过": ["passing_memories_zh"],
-    "Passing_Memories": ["passing_memories_en"],
-    "記憶の旅_Passing_Memories__记忆之旅": ["passing_memories_jp"],
-
-    # The Long Way Home
-    "回家的路": ["the_long_way_home_zh"],
-    "The_Long_Way_Home": ["the_long_way_home_en"],
-
-    # A Letter From the Wind
-    "风的来信": ["a_letter_from_the_wind_zh"],
-    "A_Letter_From_the_Wind": ["a_letter_from_the_wind_en"],
-    "風の思い出_A_Letter_From_the_Wind_jp": ["a_letter_from_the_wind_jp"],
-    "바람의 편지_A_Letter_From_the_Wind_hk": ["a_letter_from_the_wind_hk"],
-}
+```csv
+source_stem,output_stem,display_name,rarity,type,source,note
+Genshin_Impact_Main_Theme,main_theme,原神主题曲,4星,旋曜玉帛,大世界拾取,
 ```
 
-When adding new FLAC files, add an entry to `NAME_MAP`. Unmapped files fall back to lowercased names with a warning.
+When adding new FLAC files, add a row to `data/name_map.csv`.
+If `data/name_map.csv` is missing or empty, the script falls back to the built-in `DEFAULT_NAME_MAP`.
+Unmapped files fall back to lowercased names with a warning.
+
+## Data Files
+
+- `data/name_map.csv`: FLAC source stem to OGG output stem mapping, read by the conversion script.
+- `data/yumemusic.csv`: full metadata archive of the in-game "旋曜玉帛" items (not used by the script).
 
 ## Directory Structure
 
-```
+```text
 .
-├── flac/                  # FLAC source files (gitignored)
-├── ogg/                   # OGG output files (gitignored)
-├── irc/                   # LRC lyric files (gitignored)
-├── convert_flac_to_ogg.py # conversion script
+├── data/
+│   ├── name_map.csv
+│   └── yumemusic.csv
+├── flac/
+├── ogg/
+├── irc/
+├── convert_flac_to_ogg.py
 ├── .gitignore
 └── README.md
 ```
