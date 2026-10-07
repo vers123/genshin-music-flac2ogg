@@ -22,6 +22,7 @@ data/yumemusic.md
 data/yumemusic_*.md
 
 # 语言截图参考（仅翻译时查看，不入库）
+langs/screenshots/
 langs/*.png
 
 tools/raw_new.txt
